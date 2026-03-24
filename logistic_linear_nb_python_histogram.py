@@ -23,7 +23,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import GaussianNB
-from sklearn.metrics import accuracy_score, recall_score, f1_score, classification_report
+from sklearn.metrics import accuracy_score, recall_score, f1_score, classification_report, roc_auc_score, roc_curve
+import matplotlib.pyplot as plt
 
 # ===================== ##
 # Local Dataset Paths   ##
@@ -144,10 +145,15 @@ logreg = LogisticRegression(max_iter=4000, class_weight='balanced')
 logreg.fit(X_train_scaled, y_train)
 y_pred_logreg = logreg.predict(X_test_scaled)
 
+y_prob_logreg = logreg.predict_proba(X_test_scaled)[:, 1]
+auc_logreg = roc_auc_score(y_test, y_prob_logreg)
+fpr_logreg, tpr_logreg, _ = roc_curve(y_test, y_prob_logreg)
+
 print("\nLogistic Regression:")
 print("Accuracy:", accuracy_score(y_test, y_pred_logreg))
 print("Sensitivity (Recall):", recall_score(y_test, y_pred_logreg))
 print("F1 Score:", f1_score(y_test, y_pred_logreg))
+print("AUC-ROC:", auc_logreg)
 print(classification_report(y_test, y_pred_logreg))
 
 # Naive Bayes on PCA(HOG) features
@@ -155,12 +161,27 @@ nb = GaussianNB()
 nb.fit(X_train_pca, y_train)
 y_pred_nb = nb.predict(X_test_pca)
 
+y_prob_nb = nb.predict_proba(X_test_pca)[:, 1]
+auc_nb = roc_auc_score(y_test, y_prob_nb)
+fpr_nb, tpr_nb, _ = roc_curve(y_test, y_prob_nb)
+
 print("\nNaive Bayes:")
 print("Accuracy:", accuracy_score(y_test, y_pred_nb))
 print("Sensitivity (Recall):", recall_score(y_test, y_pred_nb))
 print("F1 Score:", f1_score(y_test, y_pred_nb))
+print("AUC-ROC:", auc_nb)
 print(classification_report(y_test, y_pred_nb))
 
+plt.figure(figsize=(8, 6))
+plt.plot(fpr_logreg, tpr_logreg, label=f"Logistic Regression (AUC = {auc_logreg:.4f})")
+plt.plot(fpr_nb, tpr_nb, label=f"Naive Bayes (AUC = {auc_nb:.4f})")
+plt.plot([0, 1], [0, 1], linestyle='--')
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.title("ROC Curve")
+plt.legend()
+plt.grid(True)
+plt.show()
 
 # ============================== ##
 # Save Models                     ##
