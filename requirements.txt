@@ -4,5 +4,5 @@ scikit-learn>=1.6.1
 pandas>=2.1.0
 joblib>=1.3.2 
 matplotlib
-tensorflow
-psutil
+opencv-python
+scikit-image
