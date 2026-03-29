@@ -75,7 +75,7 @@ print(f"Total demo images found: {len(all_images)}")
 # ===================== ##
 # Stress Test Loop       ##
 # ===================== ##
-batch_sizes = range(100, 9701, 100)
+batch_sizes = range(100, 1001, 200)
 results = []
 memory_usage = []
 
@@ -142,7 +142,7 @@ df_results.to_csv(os.path.join(output_dir, "stress_test_results.csv"), index=Fal
 print(" Stress test results saved.")
 
 # Plot metrics
-metrics_to_plot = [
+""" metrics_to_plot = [
     "logreg_accuracy", "logreg_precision", "logreg_recall", "logreg_f1", "logreg_time",
     "nb_accuracy", "nb_precision", "nb_recall", "nb_f1", "nb_time"
 ]
@@ -158,7 +158,67 @@ for i, metric in enumerate(metrics_to_plot, 1):
     plt.grid(True)
 plt.tight_layout()
 plt.savefig(os.path.join(output_dir, "stress_test_plot.png"))
-print(f"✅ Stress test plot saved at {output_dir}")
+print(f"✅ Stress test plot saved at {output_dir}") """
+
+# new code
+# Convert time to milliseconds
+df_results["logreg_time_ms"] = df_results["logreg_time"] * 1000
+df_results["nb_time_ms"] = df_results["nb_time"] * 1000
+
+fig, axes = plt.subplots(3, 2, figsize=(18, 12))
+axes = axes.flatten()
+
+combined_metrics = [
+    ("accuracy", "Accuracy"),
+    ("precision", "Precision"),
+    ("recall", "Recall"),
+    ("f1", "F1 Score"),
+    ("time_ms", "Avg Time/Image (ms)")
+]
+
+for i, (metric_key, metric_title) in enumerate(combined_metrics):
+    ax = axes[i]
+
+    if metric_key == "time_ms":
+        logreg_col = "logreg_time_ms"
+        nb_col = "nb_time_ms"
+    else:
+        logreg_col = f"logreg_{metric_key}"
+        nb_col = f"nb_{metric_key}"
+    logreg_y = df_results[logreg_col]
+    nb_y = df_results[nb_col]
+
+    ax.plot(df_results["batch_size"], df_results[logreg_col], marker='o', linewidth=2, label="Logistic Regression")
+    ax.plot(df_results["batch_size"], df_results[nb_col], marker='s', linewidth=2, label="Naive Bayes")
+    
+    values = list(logreg_y) + list(nb_y)
+    y_min = min(values)
+    y_max = max(values)
+
+    margin = (y_max - y_min) * 0.15  
+
+    ax.set_ylim(y_min - margin, y_max + margin)
+
+    ax.set_title("")
+    ax.set_xlabel("Batch Size", fontsize=11, labelpad=8)
+    ax.set_ylabel(metric_title, fontsize=11, labelpad=8)
+    ax.tick_params(axis='both', labelsize=10)
+    ax.grid(True, alpha=0.3)
+    ax.legend(fontsize=10, loc="best")
+
+fig.delaxes(axes[5])
+
+fig.subplots_adjust(
+    left=0.07,
+    right=0.98,
+    top=0.93,
+    bottom=0.08,
+    wspace=0.25,
+    hspace=0.45
+)
+
+plt.savefig(os.path.join(output_dir, "stress_test_plot.png"), dpi=300, bbox_inches="tight")
+plt.show()
 
 # Plot memory usage
 plt.figure(figsize=(10, 6))
