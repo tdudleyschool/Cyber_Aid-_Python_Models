@@ -1,1 +1,4 @@
 .cybervenv
+*.csv
+models/
+new_models/
