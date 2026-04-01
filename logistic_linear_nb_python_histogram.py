@@ -111,41 +111,56 @@ def load_images_parallel(base_path, img_size=(60, 60), use_hog=True):
 # ================== ##
 # Load Dataset       ##
 # ================== ##
-X_train, y_train = load_images_parallel(alzimerz_train_path, img_size=(60, 60), use_hog=True)
-X_test, y_test   = load_images_parallel(alzimerz_test_path, img_size=(60, 60), use_hog=True)
+# Logistic Regression (180x180)
+X_train_lr, y_train = load_images_parallel(alzimerz_train_path, img_size=(180, 180), use_hog=True)
+X_test_lr, y_test   = load_images_parallel(alzimerz_test_path, img_size=(180, 180), use_hog=True)
 
-print("Train:", X_train.shape, y_train.shape)
-print("Test:", X_test.shape, y_test.shape)
+# Naive Bayes (60x60)  ← KEEP ORIGINAL. test dataet is the same
+X_train_nb, _ = load_images_parallel(alzimerz_train_path, img_size=(60, 60), use_hog=True)
+X_test_nb, _  = load_images_parallel(alzimerz_test_path, img_size=(60, 60), use_hog=True)
+
+print("Train_lr:", X_train_lr.shape, y_train.shape)
+print("Test_lr:", X_test_lr.shape, y_test.shape)
+print("Train_nb:", X_train_nb.shape, y_train.shape)
+print("Test_nb:", X_test_nb.shape, X_test_lr.shape)
 print("Unique labels in train:", np.unique(y_train))
 print("Positive ratio:", np.mean(y_train))
 
 # ============================== ##
 # Feature Scaling                ##
 # ============================== ##
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled  = scaler.transform(X_test)
+# Logistic Regression scaler (180x180)
+scaler_lr = StandardScaler()
+X_train_lr_scaled = scaler_lr.fit_transform(X_train_lr)
+X_test_lr_scaled  = scaler_lr.transform(X_test_lr)
+
+# Naive Bayes scaler (60x60)
+scaler_nb = StandardScaler()
+X_train_nb_scaled = scaler_nb.fit_transform(X_train_nb)
+X_test_nb_scaled  = scaler_nb.transform(X_test_nb)
 
 # ============================== ##
 # PCA for Naive Bayes            ##
 # ============================== ##
 pca = PCA(n_components=200, random_state=42)  # NB uses PCA with 200 components
-X_train_pca = pca.fit_transform(X_train_scaled)
-X_test_pca  = pca.transform(X_test_scaled)
+X_train_pca = pca.fit_transform(X_train_nb_scaled)
+X_test_pca  = pca.transform(X_test_nb_scaled)
 
 print("After PCA (for NB):")
 print("Train:", X_train_pca.shape)
 print("Test:", X_test_pca.shape)
+
+# plts
 
 # ============================== ##
 # Model Training & Evaluation    ##
 # ============================== ##
 # Logistic Regression on HOG features (no PCA)
 logreg = LogisticRegression(max_iter=4000, class_weight='balanced')
-logreg.fit(X_train_scaled, y_train)
-y_pred_logreg = logreg.predict(X_test_scaled)
+logreg.fit(X_train_lr_scaled, y_train)
+y_pred_logreg = logreg.predict(X_test_lr_scaled)
 
-y_prob_logreg = logreg.predict_proba(X_test_scaled)[:, 1]
+y_prob_logreg = logreg.predict_proba(X_test_lr_scaled)[:, 1]
 auc_logreg = roc_auc_score(y_test, y_prob_logreg)
 fpr_logreg, tpr_logreg, _ = roc_curve(y_test, y_prob_logreg)
 
@@ -203,20 +218,20 @@ import pickle
 
 logreg_pipeline = {
     "model": logreg,
-    "scaler": scaler,
+    "scaler": scaler_lr,
     "use_pca": False,
     "pca": None,
     "hog_config": hog_config,
-    "img_size": (60, 60)
+    "img_size": (180, 180)   # ✅ FIXED
 }
 
 nb_pipeline = {
     "model": nb,
-    "scaler": scaler,
+    "scaler": scaler_nb,
     "use_pca": True,
     "pca": pca,
     "hog_config": hog_config,
-    "img_size": (60, 60)
+    "img_size": (60, 60)     # unchanged
 }
 
 # File paths inside new_models folder
@@ -230,4 +245,4 @@ with open(logreg_path, "wb") as f:
 with open(nb_path, "wb") as f:
     pickle.dump(nb_pipeline, f)
 
-print(f"\n✅ Models saved to: {model_dir}")
+print(f"\n Models saved to: {model_dir}")

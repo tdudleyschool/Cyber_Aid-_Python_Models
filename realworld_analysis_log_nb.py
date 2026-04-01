@@ -14,7 +14,7 @@ from multiprocessing import cpu_count
 from skimage.feature import hog
 from sklearn.metrics import (
     accuracy_score, recall_score, f1_score,
-    classification_report, roc_auc_score
+    classification_report, roc_auc_score, precision_score
 )
 
 # ===================== ##
@@ -114,7 +114,8 @@ def evaluate_pipeline(pipeline, name):
     print("Accuracy:", accuracy_score(y_test, y_pred))
     print("Recall:", recall_score(y_test, y_pred))
     print("F1 Score:", f1_score(y_test, y_pred))
-    print("\nClassification Report:\n", classification_report(y_test, y_pred))
+    print("Precision:", precision_score(y_test, y_pred))
+    # print("\nClassification Report:\n", classification_report(y_test, y_pred))
 
 
 
